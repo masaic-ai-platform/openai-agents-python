@@ -1,13 +1,14 @@
 import asyncio
-import os
 import json
-import requests
-from openai import AsyncOpenAI
+import os
 from dataclasses import dataclass
+from typing import Dict, Any
+
+import requests
 from agents import Agent, Runner, set_tracing_disabled
 from agents.models.openai_responses import OpenAIResponsesModel, Converter
 from agents.tool import FunctionTool, FileSearchTool
-from typing import Dict, Any
+from openai import AsyncOpenAI, OpenAI
 
 """
 This example demonstrates how to create an agent that uses the built-in agentic_search tool 
@@ -273,6 +274,20 @@ async def call_direct_api(vector_store_id, query):
     response = requests.post(url, headers=headers, data=json.dumps(payload))
     return response.json()
 
+# Define a function to convert AgenticSearchTool to the format expected by the OpenAI SDK
+def convert_agentic_search_tool(tool: AgenticSearchTool) -> Dict[str, Any]:
+    """Convert an AgenticSearchTool instance to a dictionary format accepted by the OpenAI SDK."""
+    return {
+        "type": "agentic_search",
+        "vector_store_ids": tool.vector_store_ids,
+        "max_num_results": tool.max_num_results,
+        "max_iterations": tool.max_iterations,
+        "seed_strategy": tool.seed_strategy,
+        "alpha": tool.alpha,
+        "initial_seed_multiplier": tool.initial_seed_multiplier,
+        "filters": tool.filters
+    }
+
 async def main():
     # Set up the RAG system with our sample document
     file_path = os.path.join(os.path.dirname(__file__), "sample_document.txt")
@@ -329,11 +344,26 @@ async def main():
     query = "What are the three types of machine learning and their key differences?"
     result = await Runner.run(rag_agent, input=query)
     print("\nFinal output:", result.final_output)
+
+    # Option 2: Use the OpenAI SDK directly
+    print("\nOption 2: Running agentic search query using OpenAI SDK directly...")
+    direct_client = OpenAI(
+        base_url=BASE_URL,
+        api_key=API_KEY,
+        default_headers=custom_headers
+    )
     
-    # Option 2: Use direct API call
-    print("\nOption 2: Running agentic search query using direct API call...")
-    api_result = await call_direct_api(vector_store_id, query)
-    print("\nDirect API response:", api_result.get("output", "No output returned"))
+    # Convert the agentic_search_tool to a format accepted by the OpenAI SDK
+    tool_dict = convert_agentic_search_tool(agentic_search_tool)
+    
+    sdk_response = direct_client.responses.create(
+        model=MODEL_NAME,
+        tools=[tool_dict],
+        input=query,
+        instructions="Search for the answer to the query using the agentic_search tool."
+    )
+    
+    print("\nOpenAI SDK response:", sdk_response.output)
     
     # Option 3: Use the built-in FileSearchTool
     # Create a FileSearchTool instance
