@@ -1,10 +1,8 @@
 import asyncio
-import json
 import os
 from dataclasses import dataclass
 from typing import Dict, Any
 
-import requests
 from agents import Agent, Runner, set_tracing_disabled
 from agents.models.openai_responses import OpenAIResponsesModel, Converter
 from agents.tool import FunctionTool, FileSearchTool
@@ -121,9 +119,16 @@ rag_agent = Agent(
     model=OpenAIResponsesModel(model=MODEL_NAME, openai_client=client)
 )
 
+# Create a synchronous client for non-async operations
+sync_client = OpenAI(
+    base_url=BASE_URL,
+    api_key=API_KEY,
+    default_headers=custom_headers
+)
+
 def upload_file(file_path):
     """
-    Upload a file to the OpenResponses API.
+    Upload a file to the OpenResponses API using the OpenAI SDK.
     
     Args:
         file_path: Path to the file to upload
@@ -131,22 +136,18 @@ def upload_file(file_path):
     Returns:
         file_id: ID of the uploaded file
     """
-    url = f"{BASE_URL}/files"
-    headers = {"Authorization": f"Bearer {API_KEY}"}
-    
-    with open(file_path, "rb") as f:
-        files = {"file": f}
-        data = {"purpose": "user_data"}
+    with open(file_path, "rb") as file:
+        response = sync_client.files.create(
+            file=file,
+            purpose="user_data"
+        )
         
-        response = requests.post(url, headers=headers, files=files, data=data)
-        response_json = response.json()
-        
-        print(f"File uploaded: {response_json}")
-        return response_json.get("id")
+        print(f"File uploaded: {response}")
+        return response.id
 
 def create_vector_store(name):
     """
-    Create a vector store in the OpenResponses API.
+    Create a vector store using the OpenAI SDK.
     
     Args:
         name: Name of the vector store
@@ -154,23 +155,16 @@ def create_vector_store(name):
     Returns:
         vector_store_id: ID of the created vector store
     """
-    url = f"{BASE_URL}/vector_stores"
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {API_KEY}"
-    }
+    response = sync_client.vector_stores.create(
+        name=name
+    )
     
-    data = json.dumps({"name": name})
-    
-    response = requests.post(url, headers=headers, data=data)
-    response_json = response.json()
-    
-    print(f"Vector store created: {response_json}")
-    return response_json.get("id")
+    print(f"Vector store created: {response}")
+    return response.id
 
 def add_file_to_vector_store(vector_store_id, file_id, category="documentation", language="en"):
     """
-    Add a file to a vector store in the OpenResponses API.
+    Add a file to a vector store using the OpenAI SDK.
     
     Args:
         vector_store_id: ID of the vector store
@@ -178,30 +172,39 @@ def add_file_to_vector_store(vector_store_id, file_id, category="documentation",
         category: Category attribute for the file
         language: Language attribute for the file
     """
-    url = f"{BASE_URL}/vector_stores/{vector_store_id}/files"
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {API_KEY}"
-    }
-    
-    data = {
-        "file_id": file_id,
-        "chunking_strategy": {
+    response = sync_client.vector_stores.files.create(
+        vector_store_id=vector_store_id,
+        file_id=file_id,
+        chunking_strategy={
             "type": "static",
             "static": {
                 "max_chunk_size_tokens": 1000,
                 "chunk_overlap_tokens": 200
             }
         },
-        "attributes": {
+        attributes={
             "category": category,
             "language": language
         }
-    }
+    )
     
-    response = requests.post(url, headers=headers, data=json.dumps(data))
-    print(f"File added to vector store: {response.json()}")
+    print(f"File added to vector store: {response}")
 
+# Define a function to convert AgenticSearchTool to the format expected by the OpenAI SDK
+def convert_agentic_search_tool(tool: AgenticSearchTool) -> Dict[str, Any]:
+    """Convert an AgenticSearchTool instance to a dictionary format accepted by the OpenAI SDK."""
+    return {
+        "type": "agentic_search",
+        "vector_store_ids": tool.vector_store_ids,
+        "max_num_results": tool.max_num_results,
+        "max_iterations": tool.max_iterations,
+        "seed_strategy": tool.seed_strategy,
+        "alpha": tool.alpha,
+        "initial_seed_multiplier": tool.initial_seed_multiplier,
+        "filters": tool.filters
+    }
+
+# Function to set up the RAG system
 def setup_rag_system(file_path, vector_store_name):
     """
     Set up the RAG system by uploading a file, creating a vector store, and adding the file to it.
@@ -226,7 +229,7 @@ def setup_rag_system(file_path, vector_store_name):
 
 async def call_direct_api(vector_store_id, query):
     """
-    Demonstrate calling the agentic_search API directly without the agent framework
+    Demonstrate calling the agentic_search API using the OpenAI SDK
     
     Args:
         vector_store_id: ID of the vector store to search
@@ -235,58 +238,15 @@ async def call_direct_api(vector_store_id, query):
     Returns:
         The response from the API
     """
-    url = f"{BASE_URL}/responses"
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {API_KEY}"
-    }
+    # Use sync_client for simplicity
+    response = sync_client.responses.create(
+        model=MODEL_NAME,
+        tools=[convert_agentic_search_tool(agentic_search_tool)],
+        input=query,
+        instructions="Search for the answer to the query using the agentic_search tool."
+    )
     
-    payload = {
-        "model": MODEL_NAME,
-        "tools": [{
-            "type": "agentic_search",
-            "vector_store_ids": [vector_store_id],
-            "max_num_results": 5,
-            "max_iterations": 10,
-            "seed_strategy": "hybrid",
-            "alpha": 0.7,
-            "initial_seed_multiplier": 3,
-            "filters": {
-                "type": "and",
-                "filters": [
-                    {
-                        "type": "eq",
-                        "key": "category",
-                        "value": "documentation"
-                    },
-                    {
-                        "type": "eq",
-                        "key": "language",
-                        "value": "en"
-                    }
-                ]
-            }
-        }],
-        "input": query,
-        "instructions": "Search for the answer to the query using the agentic_search tool."
-    }
-    
-    response = requests.post(url, headers=headers, data=json.dumps(payload))
-    return response.json()
-
-# Define a function to convert AgenticSearchTool to the format expected by the OpenAI SDK
-def convert_agentic_search_tool(tool: AgenticSearchTool) -> Dict[str, Any]:
-    """Convert an AgenticSearchTool instance to a dictionary format accepted by the OpenAI SDK."""
-    return {
-        "type": "agentic_search",
-        "vector_store_ids": tool.vector_store_ids,
-        "max_num_results": tool.max_num_results,
-        "max_iterations": tool.max_iterations,
-        "seed_strategy": tool.seed_strategy,
-        "alpha": tool.alpha,
-        "initial_seed_multiplier": tool.initial_seed_multiplier,
-        "filters": tool.filters
-    }
+    return response
 
 async def main():
     # Set up the RAG system with our sample document
@@ -345,25 +305,10 @@ async def main():
     result = await Runner.run(rag_agent, input=query)
     print("\nFinal output:", result.final_output)
 
-    # Option 2: Use the OpenAI SDK directly
-    print("\nOption 2: Running agentic search query using OpenAI SDK directly...")
-    direct_client = OpenAI(
-        base_url=BASE_URL,
-        api_key=API_KEY,
-        default_headers=custom_headers
-    )
-    
-    # Convert the agentic_search_tool to a format accepted by the OpenAI SDK
-    tool_dict = convert_agentic_search_tool(agentic_search_tool)
-    
-    sdk_response = direct_client.responses.create(
-        model=MODEL_NAME,
-        tools=[tool_dict],
-        input=query,
-        instructions="Search for the answer to the query using the agentic_search tool."
-    )
-    
-    print("\nOpenAI SDK response:", sdk_response.output)
+    # Option 2: Use direct API call
+    print("\nOption 2: Running agentic search query using direct API call...")
+    api_result = await call_direct_api(vector_store_id, query)
+    print("\nDirect API response:", api_result.output)
     
     # Option 3: Use the built-in FileSearchTool
     # Create a FileSearchTool instance
