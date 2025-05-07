@@ -1,0 +1,18 @@
+# OpenAI-compatible client
+openai
+
+# HTTPX for making async HTTP calls (and hooking into requests)
+httpx
+
+# Core OpenTelemetry packages
+opentelemetry-api
+opentelemetry-sdk
+
+# OTLP HTTP exporter (HTTP/protobuf)
+opentelemetry-exporter-otlp-proto-http
+
+# Semantic conventions (for ResourceAttributes)
+opentelemetry-semantic-conventions
+
+# Agents SDK
+openai-agents

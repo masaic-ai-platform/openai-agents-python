@@ -5,20 +5,19 @@ from openai import AsyncOpenAI
 from agents import Agent, Runner
 from agents.models.openai_responses import OpenAIResponsesModel
 
-
-client = AsyncOpenAI(base_url="http://localhost:8080/v1", api_key=os.getenv("OPENAI_API_KEY"), default_headers={'x-model-provider': 'openai'})
+BASE_URL = os.getenv("OPEN_RESPONSES_URL") or "http://localhost:8080/v1" #Either set OPEN_RESPONSES_URL in environment variable or put it directly here.
+API_KEY = os.getenv("GROQ_API_KEY") or "" #Either set GROQ_API_KEY in environment variable or put it directly here.
+MODEL_NAME = "groq@qwen-2.5-32b"
+client = AsyncOpenAI(base_url=BASE_URL, api_key=API_KEY)
 async def main():
     agent = Agent(
         name="Assistant",
-        instructions="You are a humorous poet who can write funny poems of 4 lines.",
-        model=OpenAIResponsesModel(model="gpt-4o-mini", openai_client=client)
+        instructions="You are a humorous person who can tell funny jokes.",
+        model=OpenAIResponsesModel(model=MODEL_NAME, openai_client=client)
     )
 
     result = await Runner.run(agent, "Tell me a joke")
     print(result.final_output)
-    # Function calls itself,
-    # Looping in smaller pieces,
-    # Endless by design.
 
 
 if __name__ == "__main__":
