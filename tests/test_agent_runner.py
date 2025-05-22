@@ -14,8 +14,10 @@ from agents import (
     InputGuardrail,
     InputGuardrailTripwireTriggered,
     ModelBehaviorError,
+    ModelSettings,
     OutputGuardrail,
     OutputGuardrailTripwireTriggered,
+    RunConfig,
     RunContextWrapper,
     Runner,
     UserError,
@@ -634,3 +636,112 @@ async def test_tool_use_behavior_custom_function():
 
     assert len(result.raw_responses) == 2, "should have two model responses"
     assert result.final_output == "the_final_output", "should have used the custom function"
+
+
+@pytest.mark.asyncio
+async def test_model_settings_override():
+    model = FakeModel()
+    agent = Agent(
+        name="test", model=model, model_settings=ModelSettings(temperature=1.0, max_tokens=1000)
+    )
+
+    model.add_multiple_turn_outputs(
+        [
+            [
+                get_text_message("a_message"),
+            ],
+        ]
+    )
+
+    await Runner.run(
+        agent,
+        input="user_message",
+        run_config=RunConfig(model_settings=ModelSettings(0.5)),
+    )
+
+    # temperature is overridden by Runner.run, but max_tokens is not
+    assert model.last_turn_args["model_settings"].temperature == 0.5
+    assert model.last_turn_args["model_settings"].max_tokens == 1000
+
+
+@pytest.mark.asyncio
+async def test_previous_response_id_passed_between_runs():
+    """Test that previous_response_id is passed to the model on subsequent runs."""
+    model = FakeModel()
+    model.set_next_output([get_text_message("done")])
+    agent = Agent(name="test", model=model)
+
+    assert model.last_turn_args.get("previous_response_id") is None
+    await Runner.run(agent, input="test", previous_response_id="resp-non-streamed-test")
+    assert model.last_turn_args.get("previous_response_id") == "resp-non-streamed-test"
+
+
+@pytest.mark.asyncio
+async def test_multi_turn_previous_response_id_passed_between_runs():
+    """Test that previous_response_id is passed to the model on subsequent runs."""
+
+    model = FakeModel()
+    agent = Agent(
+        name="test",
+        model=model,
+        tools=[get_function_tool("foo", "tool_result")],
+    )
+
+    model.add_multiple_turn_outputs(
+        [
+            # First turn: a message and tool call
+            [get_text_message("a_message"), get_function_tool_call("foo", json.dumps({"a": "b"}))],
+            # Second turn: text message
+            [get_text_message("done")],
+        ]
+    )
+
+    assert model.last_turn_args.get("previous_response_id") is None
+    await Runner.run(agent, input="test", previous_response_id="resp-test-123")
+    assert model.last_turn_args.get("previous_response_id") == "resp-test-123"
+
+
+@pytest.mark.asyncio
+async def test_previous_response_id_passed_between_runs_streamed():
+    """Test that previous_response_id is passed to the model on subsequent streamed runs."""
+    model = FakeModel()
+    model.set_next_output([get_text_message("done")])
+    agent = Agent(
+        name="test",
+        model=model,
+    )
+
+    assert model.last_turn_args.get("previous_response_id") is None
+    result = Runner.run_streamed(agent, input="test", previous_response_id="resp-stream-test")
+    async for _ in result.stream_events():
+        pass
+
+    assert model.last_turn_args.get("previous_response_id") == "resp-stream-test"
+
+
+@pytest.mark.asyncio
+async def test_previous_response_id_passed_between_runs_streamed_multi_turn():
+    """Test that previous_response_id is passed to the model on subsequent streamed runs."""
+
+    model = FakeModel()
+    agent = Agent(
+        name="test",
+        model=model,
+        tools=[get_function_tool("foo", "tool_result")],
+    )
+
+    model.add_multiple_turn_outputs(
+        [
+            # First turn: a message and tool call
+            [get_text_message("a_message"), get_function_tool_call("foo", json.dumps({"a": "b"}))],
+            # Second turn: text message
+            [get_text_message("done")],
+        ]
+    )
+
+    assert model.last_turn_args.get("previous_response_id") is None
+    result = Runner.run_streamed(agent, input="test", previous_response_id="resp-stream-test")
+    async for _ in result.stream_events():
+        pass
+
+    assert model.last_turn_args.get("previous_response_id") == "resp-stream-test"
