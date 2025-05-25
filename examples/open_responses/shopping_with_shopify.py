@@ -2,8 +2,7 @@ import os
 import re
 from openai import OpenAI
 
-"""This example demonstrates how to use the OpenAI API to interact with a Shopify store
-using the Multi-Cloud Provider (MCP) integration with streaming enabled."""
+"""This example demonstrates how to use the OpenAI python SDK to interact with a Shopify MCP tools"""
 
 
 def main():
