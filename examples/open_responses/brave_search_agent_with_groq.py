@@ -10,9 +10,9 @@ from examples.open_responses_built_in_tools import OpenResponsesBuiltInTools
 This example demonstrates how to create an agent that uses the built-in brave_web_search tool to perform a web search using Groq model with Open Responses API.
 """
 
-BASE_URL = os.getenv("OPEN_RESPONSES_URL") or "http://localhost:8080/v1" #Either set OPEN_RESPONSES_URL in environment variable or put it directly here.
+BASE_URL = os.getenv("OPEN_RESPONSES_URL") or "http://localhost:6644/v1" #Either set OPEN_RESPONSES_URL in environment variable or put it directly here.
 API_KEY = os.getenv("GROQ_API_KEY") or "" #Either set GROQ_API_KEY in environment variable or put it directly here.
-MODEL_NAME = "qwen-2.5-32b"
+MODEL_NAME = "groq@qwen-2.5-32b"
 
 custom_headers = {
     "Authorization": f"Bearer {API_KEY}"

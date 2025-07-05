@@ -64,7 +64,7 @@ class AgenticSearchTool(FunctionTool):
         for key, value in kwargs.items():
             setattr(self, key, value)
 
-BASE_URL = os.getenv("OPEN_RESPONSES_URL") or "http://localhost:8080/v1"
+BASE_URL = os.getenv("OPEN_RESPONSES_URL") or "http://localhost:6644/v1"
 API_KEY = os.getenv("OPENAI_API_KEY") # throw error if not set
 if not API_KEY:
     raise ValueError("Please set the OPENAI_API_KEY environment variable.")

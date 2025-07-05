@@ -12,32 +12,30 @@ for a specified number of iterations (default: 10) with parallel execution (defa
 """
 
 # Base URL for all providers
-BASE_URL = os.getenv("OPEN_RESPONSES_URL") or "http://localhost:8080/v1"
+BASE_URL = os.getenv("OPEN_RESPONSES_URL") or "http://localhost:6644/v1"
 
 # Model mapping for different providers
 MODEL_MAPPING = {
     "groq": {
-        "name": "qwen-2.5-32b",
+        "name": "groq@qwen-qwq-32b",
         "api_key_env": "GROQ_API_KEY",
         "headers": lambda api_key: {
             "Authorization": f"Bearer {api_key}"
         }
     },
     "openai": {
-        "name": "gpt-4o",
+        "name": "openai@gpt-4o",
         "api_key_env": "OPENAI_API_KEY",
         "headers": lambda api_key: {
-            "Authorization": f"Bearer {api_key}",
-            "x-model-provider": "openai"
+            "Authorization": f"Bearer {api_key}"
         }
     },
     "claude": {
-        "name": "claude-3-7-sonnet-20250219",
+        "name": "claude@claude-3-7-sonnet-20250219",
         "api_key_env": "CLAUDE_API_KEY",
         "headers": lambda api_key: {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}",
-            "x-model-provider": "claude"
+            "Authorization": f"Bearer {api_key}"
         }
     }
 }

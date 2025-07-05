@@ -1,7 +1,7 @@
 import os
 from openai import OpenAI
 
-openai_client = OpenAI(base_url="http://localhost:8080/v1", api_key=os.getenv("OPENAI_API_KEY"), default_headers={'x-model-provider': 'openai'})
+openai_client = OpenAI(base_url="http://localhost:6644/v1", api_key=os.getenv("OPENAI_API_KEY")})
 
 response = openai_client.responses.create(
     model="gpt-4o-mini",

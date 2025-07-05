@@ -9,10 +9,11 @@ def main():
     # Initialize the OpenAI client with your API key
     client = OpenAI(
         # Retrieve API key from environment variable
-        api_key=os.environ.get("OPENAI_API_KEY"),
+        base_url = os.getenv("OPEN_RESPONSES_URL") or "http://localhost:6644/v1",
+        api_key=os.environ.get("TOGETHERAI_API_KEY"),
     )
 
-    model = "groq@meta-llama/llama-4-maverick-17b-128e-instruct"
+    model = "togetherai@meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8"
     stream = client.responses.create(
         model=model,
         tools=[
@@ -23,7 +24,8 @@ def main():
                 "allowed_tools": ["search_shop_catalog", "update_cart"]
             }
         ],
-        input="Add the Blemish Toner Pads to my cart",
+        instructions= "Use search_shop_catalog to search the product and then add the same to cart using update_cart tool. Do not mention names of tools in the response",
+        input="Add any available cheap Blemish Toner Pads to my cart",
         stream=True
     )
 

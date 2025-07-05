@@ -3,9 +3,9 @@ from openai import OpenAI
 import os
 
 # Set custom parameters directly
-BASE_URL = os.getenv("OPEN_RESPONSES_URL") or "http://localhost:8080/v1" #Either set OPEN_RESPONSES_URL in environment variable or put it directly here.
+BASE_URL = os.getenv("OPEN_RESPONSES_URL") or "http://localhost:6644/v1" #Either set OPEN_RESPONSES_URL in environment variable or put it directly here.
 API_KEY = os.getenv("GROK_API_KEY") or "" #Either set GROK_API_KEY in environment variable or put it directly here.
-MODEL_NAME = "qwen-2.5-32b"
+MODEL_NAME = "groq@qwen-2.5-32b"
 
 # Define custom headers explicitly
 custom_headers = {
