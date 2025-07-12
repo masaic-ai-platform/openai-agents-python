@@ -13,7 +13,7 @@ pip install -r examples/open_responses/requirements-otel.txt
 2. Set the following environment variables (if different from default values)  
 - OTEL_EXPORTER_OTLP_ENDPOINT= http://localhost:4318
 - OTEL_SERVICE_NAME= agent-4-OR
-- OPEN_RESPONSES_URL=http://localhost:8080/v1
+- OPEN_RESPONSES_URL=http://localhost:6644/v1
 - GROQ_API_KEY=not_set
 
 3. Run example.

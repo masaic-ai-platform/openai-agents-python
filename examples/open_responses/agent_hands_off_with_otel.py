@@ -44,7 +44,7 @@ async def inject_and_log(request: Request):
 
 
 # ── Build your AsyncOpenAI client & wire in the hook ──────────────────────────
-BASE_URL = os.getenv("OPEN_RESPONSES_URL") or "http://localhost:8080/v1" #Either set OPEN_RESPONSES_URL in environment variable or put it directly here.
+BASE_URL = os.getenv("OPEN_RESPONSES_URL") or "http://localhost:6644/v1" #Either set OPEN_RESPONSES_URL in environment variable or put it directly here.
 API_KEY = os.getenv("GROQ_API_KEY") or "" #Either set GROQ_API_KEY in environment variable or put it directly here.
 MODEL_NAME = "groq@qwen-qwq-32b"
 

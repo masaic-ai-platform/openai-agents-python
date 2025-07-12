@@ -11,9 +11,9 @@ Add groq's API to variable - API_KEY.
 """
 
 # Set custom parameters directly
-BASE_URL = os.getenv("OPEN_RESPONSES_URL") or "http://localhost:8080/v1" #Either set OPEN_RESPONSES_URL in environment variable or put it directly here.
+BASE_URL = os.getenv("OPEN_RESPONSES_URL") or "http://localhost:6644/v1" #Either set OPEN_RESPONSES_URL in environment variable or put it directly here.
 API_KEY = os.getenv("GROQ_API_KEY") or "" #Either set GROQ_API_KEY in environment variable or put it directly here.
-MODEL_NAME = "qwen-2.5-32b"
+MODEL_NAME = "groq@qwen-qwq-32b"
 
 # Define custom headers explicitly
 custom_headers = {
@@ -23,11 +23,10 @@ custom_headers = {
 # Create a custom OpenAI client with the custom URL, API key, and explicit headers via default_headers.
 client = AsyncOpenAI(
     base_url=BASE_URL,
-    api_key=API_KEY,
-    default_headers=custom_headers
+    api_key=API_KEY
 )
 
-set_tracing_disabled(disabled=False)
+set_tracing_disabled(disabled=True)
 
 spanish_agent = Agent(
     name="Spanish agent",
